@@ -21,8 +21,8 @@ def get_driver():
     options.add_argument("--no-sandbox")
     options.add_argument("--allow-insecure-localhost")
     options.add_argument("--log-level=3")
-    driver = webdriver.Chrome(executable_path=os.environ.get("CHROMEDRIVER_PATH"),chrome_options=options)
-    #driver = webdriver.Chrome(chrome_options=options)
+    #driver = webdriver.Chrome(executable_path=os.environ.get("CHROMEDRIVER_PATH"),chrome_options=options)
+    driver = webdriver.Chrome(chrome_options=options)
     #driver.minimize_window()
     return driver
 

@@ -1,6 +1,6 @@
-import os, time, requests
+import os, time, requests, asyncio, aiohttp
 from flask import Flask, json
-from init import get_driver
+from init import driver
 from bs4 import BeautifulSoup
 
 app = Flask(__name__)
@@ -12,7 +12,6 @@ def return_json(obj):
     response = app.response_class(json.dumps(obj, sort_keys=False), mimetype=app.config['JSONIFY_MIMETYPE'])
     return response
 
-driver = get_driver()
 @app.route('/video/<string:id>/<int:chapter>')
 def getVideoByAnimeId(id, chapter):
     start_time = time.time()
@@ -34,9 +33,13 @@ def getAnimeInfoById(id):
     anime['poster'] = body.findAll('img')[1].get('src')
     anime['type'] = info[0].find('span', {'class':'info-value'}).getText()
     anime['synopsis'] = info[7].find('p').getText()[10:]
-    anime['genre'] = info[1].find('span', {'class':'info-value'}).find('a').getText()
+    genres = info[1].find('span', {'class':'info-value'}).findAll('a')
+    tmpList = []
+    for genre in genres:
+        tmpList.append(genre.getText())
+    anime['genres'] = tmpList
     anime['episodes'] = info[3].find('span', {'class':'info-value'}).getText()
-    anime['duration'] = info[4].find('span', {'class':'info-value'}).getText()
+    anime['duration'] = info[4].find('span', {'class':'info-value'}).getText()[:info[4].find('span', {'class':'info-value'}).getText().find(' p')]
     date =  info[5].find('span', {'class':'info-value'}).getText().replace('  ', '').replace('\n','')
     anime['startDate'] = date
     if date.find(' a '):
@@ -45,6 +48,10 @@ def getAnimeInfoById(id):
     anime['state'] = info[6].find('span', {'class':'info-value'}).find('b').getText()
     print("--- %s seconds ---" % (time.time() - start_time))
     return return_json(anime)
+"""
+@app.route('/search/<string:name>')
+def searchAnime(name):
+    page = requests.get('https://jkanime.net/buscar/{}/')"""
 
 @app.route("/")
 def index():
