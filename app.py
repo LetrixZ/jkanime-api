@@ -1,6 +1,6 @@
 import os, time
 from flask import Flask, json
-from init import driver
+from init import get_driver
 
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
@@ -11,6 +11,7 @@ def return_json(obj):
     response = app.response_class(json.dumps(obj, sort_keys=False), mimetype=app.config['JSONIFY_MIMETYPE'])
     return response
 
+driver = get_driver()
 @app.route('/getVideo/<string:id>/<int:chapter>')
 def getVideoByAnimeId(id, chapter):
     start_time = time.time()
