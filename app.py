@@ -1,6 +1,6 @@
 import os, time, requests, asyncio, aiohttp
 from flask import Flask, json
-from init import driver
+#from init import driver
 from bs4 import BeautifulSoup
 
 app = Flask(__name__)
@@ -13,6 +13,7 @@ def return_json(obj):
     return response
 
 def getEpisodeVideo(id, chapter):
+    from init import driver
     page = requests.get('https://jkanime.net/{}/{}'.format(id, chapter))
     soup = BeautifulSoup(page.content, 'html.parser')
     scripts = soup.findAll('script')
@@ -76,8 +77,6 @@ def getVideoByAnimeId(id, chapter):
     print("--- %s seconds ---" % (time.time() - start_time))
     return return_json({'video':video})
 
-
-
 @app.route('/info/<string:id>')
 def getAnimeInfoById(id):
     start_time = time.time()
@@ -86,10 +85,39 @@ def getAnimeInfoById(id):
     print("--- %s seconds ---" % (time.time() - start_time))
     return return_json(anime)
 
-"""
+def search(name, page):
+    page = requests.get('https://jkanime.net/buscar/{}/{}'.format(name, page))
+    soup = BeautifulSoup(page.content, 'html.parser')
+    entries = soup.findAll('div', {'class':'portada-box'})
+    if soup.find('a', {'class':'nav-next'}):
+        number = soup.find('a', {'class':'nav-next'}).get('href')
+        number = int(number[number[27:].find('/')+28:-1])
+        entries += search(name, number)
+    return entries
+
+def getData(entry):
+    title = entry.find('h2', {'class':'portada-title'}).find('a').get('title')
+    id = entry.find('h2', {'class':'portada-title'}).find('a').get('href')[20:-1]
+    poster = entry.find('img').get('src')
+    typeText = entry.find('span', {'class':'eps-num'}).getText()
+    type = typeText[:typeText.find('/')-1]
+    episodes = typeText[typeText.find('/')+2:]
+    state = 'Concluido'
+    if 'Desc' in episodes:
+        episodes = getAnimeInfo(id)[5]
+        state = 'En emision'
+    synopsis = entry.find('div', {'id':'ainfo'}).find('p').getText()
+    return (id, title, poster, type, synopsis, episodes, state)
+
 @app.route('/search/<string:name>')
 def searchAnime(name):
-    page = requests.get('https://jkanime.net/buscar/{}/')"""
+    animes = []
+    entries = search(name, 1)
+    for entry in entries:
+        info = getData(entry)
+        anime = {'id':info[0], 'name':info[1],'poster':info[2],'type':info[3],'synopsis':info[4],'episodes':info[5],'state':info[6]}
+        animes.append(anime)
+    return return_json(animes)
 
 @app.route("/")
 def index():
