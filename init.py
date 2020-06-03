@@ -14,7 +14,7 @@ def get_driver():
                                 'durable_storage': 2}}
     options.add_experimental_option('prefs', prefs)
     #options.add_argument("--headless")
-    options.add_extension("ublock.crx")
+    #options.add_extension("ublock.crx")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1200")
     options.add_argument("--disable-gpu")
