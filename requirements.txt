@@ -1,0 +1,13 @@
+click==7.1.2
+Flask==1.1.2
+fileioapi==0.0.2
+flask-restplus==0.13.0
+gunicorn==20.0.4
+itsdangerous==1.1.0
+jikanpy==4.1.0
+Jinja2==2.11.2
+MarkupSafe==1.1.1
+requests==2.23.0
+selenium==3.141.0
+urllib3==1.25.9
+Werkzeug==1.0.1
