@@ -45,7 +45,10 @@ def getEpisodeVideo(id, chapter):
             vid_script = str(script)
     vid_script = vid_script.replace('  ', '')
     vid_script = vid_script[23:vid_script.find('var video_data = video')].split('video')
-    src = vid_script[1]
+    try:
+        src = vid_script[1]
+    except IndexError:
+        return None
     player_url = src[src.find('src=')+5:src.find(' width')-1]
     driver.get(player_url)
     video = driver.find_element_by_xpath('/html/body/div[1]/video/source').get_attribute('src')
@@ -64,6 +67,9 @@ def getAnimeInfo(body):
         tmpList.append(genre.getText())
     episodeText = body.find('div', {'class':'navigation'}).findAll('a')[-1].getText()
     episodes = episodeText[episodeText.find("- ")+2:]
+    unique = None
+    if body.find('div', {'class':'lista_title_uniq'}):
+        unique = body.find('div', {'class':'listbox'}).get('a').get('href')[20:-1].replace(id+'/','')
     duration = info[4].find('span', {'class':'info-value'}).getText().replace('.','')
     if ' p' in duration:
         print(duration.find(' p'))
@@ -75,7 +81,7 @@ def getAnimeInfo(body):
     if 'Concluido' in state:
         startDate = date[:date.find(' a ')]
         finishDate = date[date.find(' a ')+3:]
-    return (name, poster, type, synopsis, tmpList, episodes, duration, startDate, finishDate, state, id)
+    return (name, poster, type, synopsis, tmpList, episodes, duration, startDate, finishDate, state, id, unique)
 
 def getBody(id):
     page = requests.get('https://jkanime.net/{}'.format(id))
@@ -109,18 +115,26 @@ def getAnimeLetters(letter, pageNumber):
 @app.route('/video/<string:id>/all/')
 def getVideosByAnimeId(id):
     start_time = time.time()
-    episodes = int(getAnimeInfo(id)[5])
+    info = getAnimeInfo(id)
+    episodes = int(info[5])
     videos = []
-    for i in range(episodes):
+    if not info[11]:
+        for i in range(episodes):
+            videoDict = {}
+            video = getEpisodeVideo(id, i+1)
+            videoDict['episode'] = str(i+1)
+            videoDict['url'] = video
+            videos.append(videoDict)
+    else:
         videoDict = {}
-        video = getEpisodeVideo(id, i+1)
+        video = getEpisodeVideo(id, info[11])
         videoDict['episode'] = str(i+1)
         videoDict['url'] = video
         videos.append(videoDict)
     print("--- %s seconds ---" % (time.time() - start_time))
     return returnJson({'videos':videos})
 
-@app.route('/video/<string:id>/<int:chapter>/')
+@app.route('/video/<string:id>/<string:chapter>/')
 def getVideoByAnimeId(id, chapter):
     start_time = time.time()
     video = getEpisodeVideo(id, chapter)
