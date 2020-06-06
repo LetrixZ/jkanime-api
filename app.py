@@ -11,6 +11,29 @@ def returnJson(obj):
     response = app.response_class(json.dumps(obj, sort_keys=False), mimetype=app.config['JSONIFY_MIMETYPE'])
     return response
 
+def getBodies(urlList):
+    bodies = []
+    async def get(url):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url=url) as response:
+                    resp = await response.read()
+                    #print("Successfully got url {} with response of length {}.".format(url, len(resp)))
+                    if len(resp) > 1000:
+                        bodies.append(resp)
+        except Exception as e:
+            print("Unable to get url {} due to {}.".format(url, e.__class__))
+    async def main(urls, amount):
+        ret = await asyncio.gather(*[get(url) for url in urls])
+        print("Finalized all. ret is a list of len {} outputs.".format(len(ret)))
+    urls = urlList
+    amount = len(urls)
+    start = time.time()
+    asyncio.run(main(urls, amount))
+    end = time.time()
+    print("Took {} seconds to pull {} websites.".format(end - start, amount))
+    return bodies
+
 def getEpisodeVideo(id, chapter):
     from init import driver
     page = requests.get('https://jkanime.net/{}/{}'.format(id, chapter))
@@ -32,7 +55,7 @@ def getAnimeInfo(body):
     info = body.findAll('div', {'class':'info-field'})
     name = body.find('div', {'class':'info-content'}).find('h2').getText()
     poster = body.findAll('img')[1].get('src')
-    id = poster[51:-4]
+    id = body.find('meta', {'property':'og:url'}).get('content')[20:-1]
     type = info[0].find('span', {'class':'info-value'}).getText()
     synopsis = info[7].find('p').getText()[10:-1]
     genres = info[1].find('span', {'class':'info-value'}).findAll('a')
@@ -59,7 +82,28 @@ def getBody(id):
     body = BeautifulSoup(page.content, 'html.parser')
     return body
 
-@app.route('/video/<string:id>/all')
+@app.route('/letter/<string:letter>/<int:pageNumber>/')
+def getAnimeLetters(letter, pageNumber):
+    page = requests.get('https://jkanime.net/letra/{}/{}/'.format(letter, pageNumber))
+    body = BeautifulSoup(page.content, 'html.parser')
+    div = body.findAll('div', {'class':'portada-box'})
+    links = []
+    for anime in div:
+        links.append(anime.find('a', {'class':'let-link'}).get('href'))
+    bodies = getBodies(links)
+    animes = []
+    for bod in bodies:
+        soup = BeautifulSoup(bod, 'html.parser')
+        info = getAnimeInfo(soup)
+        episodeList = []
+        for i in range(int(info[5])):
+            video = getEpisodeVideo(info[10], i+1)
+            episodeList.append({'episode':i+1,'video':video})
+        anime = {'id':info[10],'name':info[0],'poster':info[1],'type':info[2],'synopsis':info[3],'genres':info[4],'episodes':info[5],'episodeList':episodeList,'duration':info[6],'startDate':info[7],'finishDate':info[8],'state':info[9]}
+        animes.append(anime)
+    return returnJson(animes)
+
+@app.route('/video/<string:id>/all/')
 def getVideosByAnimeId(id):
     start_time = time.time()
     episodes = int(getAnimeInfo(id)[5])
@@ -73,14 +117,14 @@ def getVideosByAnimeId(id):
     print("--- %s seconds ---" % (time.time() - start_time))
     return returnJson({'videos':videos})
 
-@app.route('/video/<string:id>/<int:chapter>')
+@app.route('/video/<string:id>/<int:chapter>/')
 def getVideoByAnimeId(id, chapter):
     start_time = time.time()
     video = getEpisodeVideo(id, chapter)
     print("--- %s seconds ---" % (time.time() - start_time))
     return returnJson({'video':video})
 
-@app.route('/info/<string:id>')
+@app.route('/info/<string:id>/')
 def getAnimeInfoById(id):
     start_time = time.time()
     info = getAnimeInfo(getBody(id))
@@ -115,7 +159,7 @@ def getData(entry):
     synopsis = entry.find('div', {'id':'ainfo'}).find('p').getText()
     return (id, title, poster, type, synopsis, episodes, state)
 
-@app.route('/search/<string:name>')
+@app.route('/search/<string:name>/')
 def searchAnime(name):
     animes = []
     entries = search(name, 1)
@@ -124,29 +168,6 @@ def searchAnime(name):
         anime = {'id':info[0], 'name':info[1],'poster':info[2],'type':info[3],'synopsis':info[4],'episodes':info[5],'state':info[6]}
         animes.append(anime)
     return returnJson(animes)
-
-def getBodies(urlList):
-    bodies = []
-    async def get(url):
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url=url) as response:
-                    resp = await response.read()
-                    #print("Successfully got url {} with response of length {}.".format(url, len(resp)))
-                    if len(resp) > 1000:
-                        bodies.append(resp)
-        except Exception as e:
-            print("Unable to get url {} due to {}.".format(url, e.__class__))
-    async def main(urls, amount):
-        ret = await asyncio.gather(*[get(url) for url in urls])
-        print("Finalized all. ret is a list of len {} outputs.".format(len(ret)))
-    urls = urlList
-    amount = len(urls)
-    start = time.time()
-    asyncio.run(main(urls, amount))
-    end = time.time()
-    print("Took {} seconds to pull {} websites.".format(end - start, amount))
-    return bodies
 
 def getSchedule(day):
     page = requests.get('https://jkanime.net/horario/')
@@ -165,7 +186,7 @@ def getSchedule(day):
         schedule.append(anime)
     return schedule
 
-@app.route('/schedule/<int:day>')
+@app.route('/schedule/<int:day>/')
 def getScheduleByDay(day):
     if day > 7 or day < 1:
         return returnJson({'schedule':''})
