@@ -69,10 +69,12 @@ def getAnimeInfo(body):
     episodes = episodeText[episodeText.find("- ")+2:]
     unique = None
     if body.find('div', {'class':'lista_title_uniq'}):
-        unique = body.find('div', {'class':'listbox'}).get('a').get('href')[20:-1].replace(id+'/','')
+        try:
+            unique = body.find('div', {'class':'listbox'}).get('a').get('href')[20:-1].replace(id+'/','')
+        except AttributeError:
+            unique = None
     duration = info[4].find('span', {'class':'info-value'}).getText().replace('.','')
     if ' p' in duration:
-        print(duration.find(' p'))
         duration = duration[:duration.find(' p')]
     date =  info[5].find('span', {'class':'info-value'}).getText().replace('  ', '').replace('\n','')
     startDate = date
