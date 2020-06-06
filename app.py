@@ -81,8 +81,11 @@ def getAnimeInfo(body):
     tmpList = []
     for genre in genres:
         tmpList.append(genre.getText())
-    episodeText = body.find('div', {'class':'navigation'}).findAll('a')[-1].getText()
-    episodes = episodeText[episodeText.find("- ")+2:]
+    try:
+        episodeText = body.find('div', {'class':'navigation'}).findAll('a')[-1].getText()
+        episodes = episodeText[episodeText.find("- ")+2:]
+    except IndexError:
+        episodes = "0"
     unique = None
     if body.find('div', {'class':'lista_title_uniq'}):
         try:
