@@ -96,10 +96,13 @@ def getAnimeLetters(letter, pageNumber):
         soup = BeautifulSoup(bod, 'html.parser')
         info = getAnimeInfo(soup)
         episodeList = []
-        for i in range(int(info[5])):
-            video = getEpisodeVideo(info[10], i+1)
-            episodeList.append({'episode':i+1,'video':video})
-        anime = {'id':info[10],'name':info[0],'poster':info[1],'type':info[2],'synopsis':info[3],'genres':info[4],'episodes':info[5],'episodeList':episodeList,'duration':info[6],'startDate':info[7],'finishDate':info[8],'state':info[9]}
+        #for i in range(int(info[5])):
+        #    video = getEpisodeVideo(info[10], i+1)
+        #    episodeList.append({'episode':i+1,'video':video})
+        anime = {'name':info[0],'poster':info[1],'type':info[2],'synopsis':info[3],'genres':info[4],'episodes':info[5],'episodeList':episodeList,'duration':info[6],'startDate':info[7],'finishDate':info[8],'state':info[9]}
+        obj = {'id':info[10]}
+        insert = lambda _dict, obj, pos: {k: v for k, v in (list(_dict.items())[:pos] + list(obj.items()) + list(_dict.items())[pos:])}
+        anime = insert(anime, obj, 0)
         animes.append(anime)
     return returnJson(animes)
 
