@@ -40,7 +40,7 @@ def getBodies(urlList):
     def load_url(url, timeout):
         return requests.get(url, timeout = timeout)
     bodies = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         future_to_url = {executor.submit(load_url, url, 120): url for url in urlList}
         for future in concurrent.futures.as_completed(future_to_url):
             url = future_to_url[future]
@@ -70,6 +70,8 @@ def getEpisodeVideo(id, chapter):
 
 def getAnimeInfo(body):
     info = body.findAll('div', {'class':'info-field'})
+    if body.find('div', {'class':'info-content'}) is None:
+        print(body)
     name = body.find('div', {'class':'info-content'}).find('h2').getText()
     poster = body.findAll('img')[1].get('src')
     id = body.find('meta', {'property':'og:url'}).get('content')[20:-1]
