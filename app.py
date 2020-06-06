@@ -1,4 +1,4 @@
-import os, time, requests, asyncio, aiohttp, re
+import os, time, requests, asyncio, aiohttp, re, concurrent.futures
 from flask import Flask, json
 from bs4 import BeautifulSoup
 
@@ -11,6 +11,7 @@ def returnJson(obj):
     response = app.response_class(json.dumps(obj, sort_keys=False), mimetype=app.config['JSONIFY_MIMETYPE'])
     return response
 
+"""
 def getBodies(urlList):
     bodies = []
     async def get(url):
@@ -32,6 +33,19 @@ def getBodies(urlList):
     asyncio.run(main(urls, amount))
     end = time.time()
     print("Took {} seconds to pull {} websites.".format(end - start, amount))
+    return bodies
+"""
+
+def getBodies(urlList):
+    def load_url(url, timeout):
+        return requests.get(url, timeout = timeout)
+    bodies = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        future_to_url = {executor.submit(load_url, url, 120): url for url in urlList}
+        for future in concurrent.futures.as_completed(future_to_url):
+            url = future_to_url[future]
+            data = future.result()
+            bodies.append(data.content)
     return bodies
 
 def getEpisodeVideo(id, chapter):
@@ -99,6 +113,7 @@ def getAnimeLetters(letter, pageNumber):
     for anime in div:
         links.append(anime.find('a', {'class':'let-link'}).get('href'))
     bodies = getBodies(links)
+    print('DIV: {} - LINKS: {} - BODIES: {}'.format(len(div),len(links),len(bodies)))
     animes = []
     for bod in bodies:
         soup = BeautifulSoup(bod, 'html.parser')
