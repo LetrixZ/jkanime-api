@@ -40,8 +40,8 @@ def getBodies(urlList):
     def load_url(url, timeout):
         return requests.get(url, timeout = timeout)
     bodies = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        future_to_url = {executor.submit(load_url, url, 120): url for url in urlList}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        future_to_url = {executor.submit(load_url, url, 60): url for url in urlList}
         for future in concurrent.futures.as_completed(future_to_url):
             url = future_to_url[future]
             data = future.result()
@@ -242,4 +242,4 @@ def index():
 
 if __name__ == '__main__':
     # Threaded option to enable multiple instances for multiple user access support
-    app.run(threaded=True, port=5000, debug=True)
+    app.run(threaded=True, port=5000, debug=False)
