@@ -167,7 +167,7 @@ def getVideoByAnimeId(id, chapter):
 def getAnimeInfoById(id):
     start_time = time.time()
     info = getAnimeInfo(getBody(id))
-    anime = {'name':info[0],'poster':info[1],'type':info[2],'synopsis':info[3],'genres':info[4],'episodes':info[5],'duration':info[6],'startDate':info[7],'finishDate':info[8],'state':info[9]}
+    anime = {'id':id, 'name':info[0],'poster':info[1],'type':info[2],'synopsis':info[3],'genres':info[4],'episodes':info[5],'duration':info[6],'startDate':info[7],'finishDate':info[8],'state':info[9]}
     print("--- %s seconds ---" % (time.time() - start_time))
     return returnJson(anime)
 
